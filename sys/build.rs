@@ -56,6 +56,13 @@ fn main() {
             }
         }
     }
+    #[cfg(feature = "hipblas")]
+    {
+        println!("cargo:rustc-link-lib=hipblas");
+        println!("cargo:rustc-link-lib=amdhip64");
+        println!("cargo:rustc-link-lib=rocblas");
+        println!("cargo:rustc-link-search=/opt/rocm/lib");
+    }
     println!("cargo:rerun-if-changed=wrapper.h");
 
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -137,6 +144,10 @@ fn main() {
     } else {
         // Metal is enabled by default, so we need to explicitly disable it
         config.define("WHISPER_METAL", "OFF");
+    }
+
+    if cfg!(feature = "hipblas") {
+        config.define("WHISPER_HIPBLAS", "ON");
     }
 
     if cfg!(debug_assertions) || cfg!(feature = "force-debug") {

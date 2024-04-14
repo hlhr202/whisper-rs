@@ -46,6 +46,7 @@ cuda = []
 opencl = []
 openblas = []
 metal = []
+hipblas = []
 force-debug = []
 
 [build-dependencies]
