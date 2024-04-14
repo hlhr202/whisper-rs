@@ -4,6 +4,7 @@ extern crate bindgen;
 
 use cmake::Config;
 use std::env;
+use std::env::VarError;
 use std::path::PathBuf;
 
 fn main() {
@@ -58,10 +59,18 @@ fn main() {
     }
     #[cfg(feature = "hipblas")]
     {
+        let rocm_path = PathBuf::from(env::var("ROCM_PATH").map_or_else(
+            |e| match e {
+                VarError::NotPresent => "/opt/rocm".to_string(),
+                e => panic!("failed to fetch ROCM_PATH env var: {}", e),
+            },
+            |p| p,
+        ));
         println!("cargo:rustc-link-lib=hipblas");
         println!("cargo:rustc-link-lib=amdhip64");
         println!("cargo:rustc-link-lib=rocblas");
-        println!("cargo:rustc-link-search=/opt/rocm/lib");
+        let search_path = rocm_path.join("lib");
+        println!("cargo:rustc-link-search={}", search_path.display());
     }
     println!("cargo:rerun-if-changed=wrapper.h");
 
@@ -147,7 +156,19 @@ fn main() {
     }
 
     if cfg!(feature = "hipblas") {
-        config.define("WHISPER_HIPBLAS", "ON");
+        let rocm_path = PathBuf::from(env::var("ROCM_PATH").map_or_else(
+            |e| match e {
+                VarError::NotPresent => "/opt/rocm".to_string(),
+                e => panic!("failed to fetch ROCM_PATH env var: {}", e),
+            },
+            |p| p,
+        ));
+        let cmake_compilers = rocm_path.join("llvm").join("bin");
+
+        config
+            .define("WHISPER_HIPBLAS", "ON")
+            .define("CMAKE_C_COMPILER", cmake_compilers.join("clang"))
+            .define("CMAKE_CXX_COMPILER", cmake_compilers.join("clang++"));
     }
 
     if cfg!(debug_assertions) || cfg!(feature = "force-debug") {
