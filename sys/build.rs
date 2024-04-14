@@ -134,7 +134,9 @@ fn main() {
 
     if cfg!(feature = "metal") {
         config.define("WHISPER_METAL", "ON");
-        env::set_var("GGML_METAL_PATH_RESOURCES", out.as_os_str());
+        let metal_resource_path = out.join("whisper.cpp");
+        assert!(metal_resource_path.exists());
+        env::set_var("GGML_METAL_PATH_RESOURCES", metal_resource_path);
     } else {
         // Metal is enabled by default, so we need to explicitly disable it
         config.define("WHISPER_METAL", "OFF");
